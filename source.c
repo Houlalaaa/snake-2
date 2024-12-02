@@ -134,7 +134,7 @@
 * \brief taille max du serpent.
 *
 */
-#define TAILLE_MAX 20
+#define NB_POMMES 10
 
 /**
 *
@@ -172,7 +172,7 @@ void gotoXY(int x, int y);
 void afficher(int x, int y, char c);
 void effacer(int x , int y);
 void dessinerSerpent(int lesX[], int lesY[]);
-void progresser(int lesX[], int lesY[], char direction, char *ancienne_direction, bool *colision, bool *mange);
+void progresser(int lesX[], int lesY[], char direction, bool *colision, bool *mange);
 void disableEcho();
 void enableEcho();
 void initPlateau(char plateau[HAUTEUR_PLAT][LARGEUR_PLAT]);
@@ -196,6 +196,8 @@ typtab plateau;
 
 int TAILLE = 10;
 int VITESSE = 200000;
+int lesPommesX[NB_POMMES] = {75, 75, 78, 2, 8, 78, 74, 2, 72, 5};
+int lesPommesY[NB_POMMES] = { 8, 39, 2, 2, 5, 39, 33, 38, 35, 2};
 
 /*****************************************************
  *              PROGRAMME PRINCIPAL                  *
@@ -203,9 +205,10 @@ int VITESSE = 200000;
 
 int main() {
 //definintion des variables
-    int tabX[TAILLE_MAX], tabY[TAILLE_MAX]; 
-    char caractere = DROITE, ancienne_direction = DROITE;
+    int tabX[NB_POMMES], tabY[NB_POMMES]; 
+    char caractere = DROITE;
     bool colision = false , mange = false ;
+    int indice = 0;
 //initialisation des aprametre de bae du jeu
     srand(time(NULL));
     system("clear");
@@ -219,12 +222,12 @@ int main() {
     system("clear");
     afficherPlateau(plateau);
     dessinerSerpent(tabX, tabY);
-    ajoute_pomme();
+    ajoute_pomme(indice);
     disableEcho();
 
 // Boucle principale du jeu
     while (caractere != CARACTER_FIN) {
-        progresser(tabX, tabY, caractere, &ancienne_direction , &colision , &mange);
+        progresser(tabX, tabY, caractere, &colision , &mange);
         usleep(VITESSE);  
 
     //verification de pressage des touches
@@ -244,21 +247,19 @@ int main() {
 
     //verifie quand une pomme est mangee
         if (mange == true){
-
         //verifie su la taille max est atteinte
-            if(TAILLE >=TAILLE_MAX){
+            if(indice >=NB_POMMES){
                 caractere=CARACTER_FIN ;
             }
-
-            ajoute_pomme();
-            VITESSE = VITESSE -10000 ;
+            indice+=1;
+            ajoute_pomme(indice);
             mange = false;
         }
     }
 //parametre de fin du jeu
     system("clear");
 //verifie su la taille max est atteinte ou non
-    if(TAILLE >=TAILLE_MAX){
+    if(TAILLE >NB_POMMES){
         printf("Victoire !");
     }
     else{
@@ -306,31 +307,6 @@ void initPlateau(char plateau[HAUTEUR_PLAT][LARGEUR_PLAT]) {
             }
         }
     }
-
-    // Placement des obstacles
-    for (int k = 0; k < 4; k++) {
-        //genere des coordonÃƒÂ©es alÃƒÂ©atoire dans le plateau
-        int y_carre = (rand() % (LARGEUR_PLAT - 7) + 2);
-        int x_carre = (rand() % (HAUTEUR_PLAT - 7) + 2);
- 
-        while (plateau[x_carre + 5][y_carre + 5] == OBSTACLE || (x_carre >=25 && x_carre <= 45 && y_carre >= 14 && y_carre <=20)) { //verifie que les blocs n'apparaisent pas l'un sur autre
-            y_carre = (rand() % (LARGEUR_PLAT - 7) + 2);
-            x_carre = (rand() % (HAUTEUR_PLAT - 7) + 2);
-        }
-        
-        for (int i = 0; i < 5; i++) {
-            for (int j = 0; j < 5; j++) {
-                plateau[i + x_carre][j + y_carre] = OBSTACLE;
-            }
-        }
-    }
-    //initialisation des portail
-    plateau[0][LARGEUR_PLAT / 2] = CARACTERE_VIDE;
-	plateau[HAUTEUR_PLAT - 1][LARGEUR_PLAT / 2] = CARACTERE_VIDE;
-
-	plateau[HAUTEUR_PLAT / 2][0] = CARACTERE_VIDE;
-	plateau[HAUTEUR_PLAT / 2][LARGEUR_PLAT - 1] = CARACTERE_VIDE;
-    
 }
 
 /**
@@ -370,68 +346,31 @@ void afficherPlateau(char plateau[HAUTEUR_PLAT][LARGEUR_PLAT]) {
 * Consiste à faire avance le serpent en prenant compte des direction et en detectant les obstacles,murs et pommes.
 *
 */
-void progresser(int lesX[], int lesY[], char direction, char *ancienne_direction, bool *colision, bool *mange) {
+void progresser(int lesX[], int lesY[], char direction, bool *colision, bool *mange) {
     effacer(lesX[TAILLE-1],lesY[TAILLE-1]); //enleve le dernier bout du serpent
-    plateau[lesY[TAILLE-1]-1][lesX[TAILLE-1]-1]=' ';//enleve le dernier bout du serpent dans le tableau
 
     if (plateau[lesY[0]][lesX[0]] == '6' ) {//detection de la pomme
         *mange = true;
-        TAILLE +=1 ;
     }
     //modifie les coordonÃƒÂ©es du serpent
     for (int i = TAILLE - 1; i > 0; i--) {
         lesX[i] = lesX[i - 1];
         lesY[i] = lesY[i - 1];
-        plateau[lesY[i]-1][lesX[i]-1]=OBSTACLE;
-    }
-
-    // Ignorer les mouvements opposÃƒÂ©s                  
-    if ((direction == DROITE && *ancienne_direction == GAUCHE) ||
-        (direction == GAUCHE && *ancienne_direction == DROITE) ||
-        (direction == HAUT && *ancienne_direction == BAS) ||
-        (direction == BAS && *ancienne_direction == HAUT)) {
-        direction = *ancienne_direction;
-    } else {
-        *ancienne_direction = direction;
     }
     //modifie la position de la tÃƒÂªte
     if (direction == HAUT) {
-        if(lesY[0]==1){
-            lesY[0]=lesY[0]+39;
-        }
-        else{
             lesY[0]--;
         }
-    }
     //detecion des direction et des portail et ajutement de la position de la tete
     if (direction == BAS) {
-        if(lesY[0]==40){
-            lesY[0]=lesY[0]-39;
-
-        }
-        else{
             lesY[0]++;
-        }
     }
     if (direction == DROITE) {
-        if(lesX[0]==80){
-            lesX[0]=lesX[0]-79;
-
-        }
-        else{
             lesX[0]++;
         }
-    }
     if (direction == GAUCHE) {
-        if(lesX[0]==1){
-            lesX[0]=lesX[0]+79;
-
-        }
-        else{
             lesX[0]--;
         }
-    }
-
 
     //verifie si le serpent entre en colision
     if (plateau[lesY[0]-1][lesX[0]-1] == OBSTACLE ) {
@@ -442,14 +381,7 @@ void progresser(int lesX[], int lesY[], char direction, char *ancienne_direction
 }
 
 /**
-*
-* \fn dessinerSerpent(int lesX[], int lesY[])
-*
-* \brief affiche le serpent.
-*
-* \param lesX[] :tableau de coordonees verticales du serpent.
-* \param lesY[] :tableau de coordonees horizontales du serpent.
-*
+*TAILLE_MAX
 * affiche le serpent.
 *
 */
@@ -533,12 +465,7 @@ void disableEcho() {
     if (tcsetattr(STDIN_FILENO, TCSANOW, &tty) == -1) {
         perror("tcsetattr");
         exit(EXIT_FAILURE);
-    }
-}
-
-/**
-*
-* \fn enableEcho().
+    }TAILLE_MAXbleEcho().
 *
 * \brief permet decrire dans le terminal.
 *
@@ -572,17 +499,7 @@ void enableEcho() {
 int kbhit() {
     struct termios oldt, newt;
     int ch;
-    int oldf;
-
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
-
-    ch = getchar();
-
+    int oldfTAILLE_MAX
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     fcntl(STDIN_FILENO, F_SETFL, oldf);
 
@@ -602,13 +519,9 @@ int kbhit() {
 * ajoute une pomme dans le plateau en dehors des carre genere et du serpent.
 *
 */
-void ajoute_pomme(){
-    int x_carre = (rand() % (LARGEUR_PLAT - 2) + 2);
-    int y_carre = (rand() % (HAUTEUR_PLAT - 2) + 2);
-    while (plateau[y_carre-1][x_carre-1] != CARACTERE_VIDE ) { //verifie que les la pomme n'apparait pas sur le serpent et les bloc
-        x_carre = (rand() % (LARGEUR_PLAT - 2) + 2);
-        y_carre = (rand() % (HAUTEUR_PLAT - 2) + 2);
-    }
+void ajoute_pomme(int indice){
+    int x_carre=lesPommesX[indice];
+    int y_carre=lesPommesY[indice];
     plateau[y_carre][x_carre] = CHAR_POMME;
     afficher(x_carre,y_carre,CHAR_POMME);
 
